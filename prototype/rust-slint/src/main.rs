@@ -1,11 +1,16 @@
 #![windows_subsystem = "windows"]
 
+mod autostart;
+mod installer;
 mod ipc;
 mod service;
 mod single_instance;
 mod tray;
+mod window;
 
 use base64::Engine;
+use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+use slint::ComponentHandle;
 use std::time::Duration;
 
 slint::include_modules!();
@@ -34,6 +39,21 @@ fn main() -> Result<(), slint::PlatformError> {
     }
     let ui = AppWindow::new()?;
     let _tray = tray::install(ui.as_weak());
+    ui.set_autostart(autostart::is_enabled());
+
+    // Intercept WM_CLOSE: the X button hides the window to tray instead of quitting.
+    let close_timer = slint::Timer::default();
+    let weak_close = ui.as_weak();
+    close_timer.start(slint::TimerMode::Repeated, Duration::from_millis(500), move || {
+        if let Some(ui) = weak_close.upgrade() {
+            let window_handle = ui.window().window_handle();
+            if let Ok(handle) = window_handle.window_handle() {
+                if let RawWindowHandle::Win32(win32) = handle.as_raw() {
+                    let _ = window::install_close_to_tray(win32.hwnd.get());
+                }
+            }
+        }
+    });
 
     // Local clock.
     let weak = ui.as_weak();
@@ -163,6 +183,37 @@ fn main() -> Result<(), slint::PlatformError> {
             std::thread::sleep(std::time::Duration::from_secs(1));
             let _ = service::ensure_running();
         });
+    });
+
+    ui.on_toggle_autostart({
+        let weak = ui.as_weak();
+        move || {
+            let enabled = autostart::toggle();
+            if let Some(ui) = weak.upgrade() {
+                ui.set_autostart(enabled);
+                ui.set_status_text(if enabled { "已开启开机启动" } else { "已关闭开机启动" }.into());
+            }
+        }
+    });
+
+    ui.on_install_service({
+        let weak = ui.as_weak();
+        move || {
+            if let Some(ui) = weak.upgrade() {
+                ui.set_status_text("等待管理员确认安装".into());
+            }
+            let _ = installer::run_script("install-service.ps1");
+        }
+    });
+
+    ui.on_uninstall_service({
+        let weak = ui.as_weak();
+        move || {
+            if let Some(ui) = weak.upgrade() {
+                ui.set_status_text("等待管理员确认卸载".into());
+            }
+            let _ = installer::run_script("uninstall-service.ps1");
+        }
     });
 
     ui.on_toggle_service(|| {

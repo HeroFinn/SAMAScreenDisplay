@@ -247,6 +247,7 @@ export component AppWindow inherits Window {
     in-out property <string> interval: "3 s";
     in-out property <bool> connected: true;
     in-out property <bool> starting: false;
+    in-out property <bool> autostart: false;
     in-out property <string> status-text: "已连接";
     in-out property <image> preview-image: @image-url("assets/dashboard-preview.png");
     in-out property <bool> service-mode: true;
@@ -260,6 +261,9 @@ export component AppWindow inherits Window {
     callback apply-settings();
     callback open-logs();
     callback restart-service();
+    callback toggle-autostart();
+    callback install-service();
+    callback uninstall-service();
 
     // ---------------- sidebar ----------------
     Rectangle {
@@ -612,6 +616,16 @@ export component AppWindow inherits Window {
                 label: "启动 / 停止";
                 clicked => { root.toggle-service(); }
             }
+            ActionButton {
+                x: 20px; y: 292px; width: 130px;
+                label: "安装/修复服务";
+                clicked => { root.install-service(); }
+            }
+            ActionButton {
+                x: 162px; y: 292px; width: 130px;
+                label: "卸载服务";
+                clicked => { root.uninstall-service(); }
+            }
         }
 
         Card {
@@ -624,9 +638,14 @@ export component AppWindow inherits Window {
             }
             ActionButton { x: 20px; y: 110px; width: 170px; label: "打开日志目录"; clicked => { root.open-logs(); } }
             ActionButton { x: 20px; y: 158px; width: 170px; label: "重启服务"; clicked => { root.restart-service(); } }
+            ActionButton {
+                x: 20px; y: 206px; width: 170px;
+                label: root.autostart ? "开机启动：开" : "开机启动：关";
+                clicked => { root.toggle-autostart(); }
+            }
             Text {
-                x: 20px; y: 220px; width: parent.width - 40px;
-                text: "原型只做界面与 IPC 验证，按钮暂不执行真实安装/卸载。";
+                x: 20px; y: 258px; width: parent.width - 40px;
+                text: "安装/卸载会弹出 UAC 管理员确认；开机启动写入当前用户 Run 键。";
                 color: #64748b; font-size: 10px; wrap: word-wrap;
             }
         }
