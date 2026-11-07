@@ -246,6 +246,8 @@ export component AppWindow inherits Window {
     in-out property <string> frame-ms: "0";
     in-out property <string> interval: "3 s";
     in-out property <bool> connected: true;
+    in-out property <bool> starting: false;
+    in-out property <string> status-text: "已连接";
     in-out property <bool> service-mode: true;
     in-out property <int> theme: 0;
     in-out property <float> interval-value: 3;
@@ -312,7 +314,7 @@ export component AppWindow inherits Window {
             Rectangle {
                 x: 14px; y: 16px; width: 8px; height: 8px;
                 border-radius: 4px;
-                background: root.connected ? #34d399 : #f87171;
+                background: root.starting ? #fbbf24 : root.connected ? #34d399 : #f87171;
             }
             Text {
                 x: 28px; y: 10px;
@@ -381,18 +383,18 @@ export component AppWindow inherits Window {
         width: 120px;
     }
     Rectangle {
-        x: parent.width - 118px; y: 26px;
-        width: 92px; height: 26px;
+        x: parent.width - 136px; y: 26px;
+        width: 110px; height: 26px;
         border-radius: 13px;
-        background: root.connected ? #123326 : #331b1b;
+        background: root.starting ? #3a2a12 : root.connected ? #123326 : #331b1b;
         border-width: 1px;
-        border-color: root.connected ? #1f6b4a : #7f1d1d;
+        border-color: root.starting ? #8a5a12 : root.connected ? #1f6b4a : #7f1d1d;
     }
     Text {
-        x: parent.width - 118px; y: 31px;
-        width: 92px;
-        text: root.connected ? "已连接" : "未连接";
-        color: root.connected ? #34d399 : #f87171;
+        x: parent.width - 136px; y: 31px;
+        width: 110px;
+        text: root.status-text;
+        color: root.starting ? #fbbf24 : root.connected ? #34d399 : #f87171;
         font-size: 11px;
         font-weight: 700;
         horizontal-alignment: center;

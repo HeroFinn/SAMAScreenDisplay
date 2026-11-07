@@ -5,12 +5,6 @@ $ErrorActionPreference = 'Stop'
 $pawn = Get-CimInstance Win32_SystemDriver -Filter "Name='PawnIO'" -ErrorAction SilentlyContinue
 if (-not $pawn) {
     $pawnSetup = Join-Path $PSScriptRoot 'prereq\PawnIO_setup.exe'
-    if (-not (Test-Path $pawnSetup)) {
-        $downloader = Join-Path $PSScriptRoot 'prereq\download-pawnio.ps1'
-        if (Test-Path $downloader) {
-            try { & $downloader } catch { Write-Warning ('PawnIO download failed: ' + $_.Exception.Message) }
-        }
-    }
     if (Test-Path $pawnSetup) {
         Write-Host 'Installing PawnIO driver (CPU temperature)...'
         try { Start-Process -FilePath $pawnSetup -ArgumentList '-install','-silent' -Wait } catch {
@@ -54,6 +48,12 @@ New-Service -Name 'SamaDisplaySvc' -BinaryPathName "`"$exe`"" -DisplayName 'SAMA
     -StartupType Automatic | Out-Null
 
 sc.exe failure SamaDisplaySvc reset= 86400 actions= restart/5000/restart/10000/restart/30000 | Out-Null
+
+# Allow normal users to start/stop/query the service so the desktop app can
+# bring the backend up without an elevation prompt on every launch.
+$sddl = 'D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWRPWPDTLOCRRC;;;AU)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)'
+sc.exe sdset SamaDisplaySvc $sddl | Out-Null
+
 Start-Service -Name 'SamaDisplaySvc'
 
 $dataDir = Join-Path $env:ProgramData 'SamaDisplay'

@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     private bool _reallyExit;
     private bool _serviceRunning;
     private DateTime _lastServiceCheck = DateTime.MinValue;
+    private DateTime _lastServiceStartAttempt = DateTime.MinValue;
     private string _theme = "Dark";
     private DateTime _lastPreview = DateTime.MinValue;
 
@@ -120,6 +121,12 @@ public partial class MainWindow : Window
             {
                 _lastServiceCheck = DateTime.Now;
                 _serviceRunning = IsServiceRunning();
+                if (!_serviceRunning && (DateTime.Now - _lastServiceStartAttempt).TotalSeconds >= 15)
+                {
+                    _lastServiceStartAttempt = DateTime.Now;
+                    DisposeLocalEngine();
+                    if (TryStartInstalledService()) _serviceRunning = true;
+                }
             }
 
             if (_serviceRunning)
@@ -476,6 +483,23 @@ public partial class MainWindow : Window
         ServiceControllerStatus.StopPending => "停止中",
         _ => s.ToString()
     };
+
+    private static bool TryStartInstalledService()
+    {
+        try
+        {
+            using var sc = new ServiceController(AppPaths.ServiceName);
+            _ = sc.Status;
+            if (sc.Status == ServiceControllerStatus.Running) return true;
+            if (sc.Status == ServiceControllerStatus.Stopped)
+            {
+                sc.Start();
+                sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(8));
+            }
+            return sc.Status == ServiceControllerStatus.Running;
+        }
+        catch { return false; }
+    }
 
     private static bool IsServiceRunning()
     {

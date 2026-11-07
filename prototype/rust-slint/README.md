@@ -35,10 +35,11 @@ cargo run
 
 或使用 `.\build.ps1`（会自动查找 WinLibs / rustup 路径）。
 
-## 运行前提
+## 服务自动拉起
 
-- C# 服务 `SamaDisplaySvc` 正在运行（它独占 COM9 并提供命名管道）
-- 若服务未运行，界面会显示“未连接”，数据保留 mock 值
+- 应用启动时先探测 `SamaDisplay.IPC`；无响应则自动执行 `sc start SamaDisplaySvc`，最多等待 12 秒。
+- 安装器会通过 SDDL 给普通用户授予该服务的启动/停止/查询权限，因此不需要每次弹 UAC。
+- 若服务未安装或启动失败，界面显示“服务未启动/未连接”，并保留 mock 数据。
 
 ## 原型限制
 

@@ -1,4 +1,5 @@
 mod ipc;
+mod service;
 
 use std::time::Duration;
 
@@ -30,6 +31,23 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    // Bring the backend up automatically; a service installed by our installer
+    // grants normal users start/stop/query rights, so this does not need UAC.
+    ui.set_starting(true);
+    ui.set_status_text("正在启动服务".into());
+    let weak_ensure = ui.as_weak();
+    std::thread::spawn(move || {
+        let ok = service::ensure_running();
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak_ensure.upgrade() {
+                ui.set_starting(false);
+                if !ok {
+                    ui.set_status_text("服务未启动".into());
+                }
+            }
+        });
+    });
+
     // Poll the C# service over its named pipe.
     let weak = ui.as_weak();
     std::thread::spawn(move || loop {
@@ -39,6 +57,8 @@ fn main() -> Result<(), slint::PlatformError> {
             if let Some(ui) = weak.upgrade() {
                 match result {
                     Ok(st) => {
+                        ui.set_starting(false);
+                        ui.set_status_text("已连接".into());
                         ui.set_connected(st.connected);
                         ui.set_port(st.port.unwrap_or_else(|| "--".into()).into());
                         ui.set_firmware(st.version.unwrap_or_else(|| "--".into()).into());
@@ -63,6 +83,9 @@ fn main() -> Result<(), slint::PlatformError> {
                     }
                     Err(_) => {
                         ui.set_connected(false);
+                        if !ui.get_starting() {
+                            ui.set_status_text("未连接".into());
+                        }
                     }
                 }
             }
