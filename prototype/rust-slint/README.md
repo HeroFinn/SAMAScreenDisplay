@@ -2,7 +2,7 @@
 
 这是现有 C# 服务的前端替代原型：**Rust + Slint**，通过命名管道 `SamaDisplay.IPC` 读取实时状态并下发设置。
 
-![仪表盘](dashboard.png)
+![仪表盘](live_preview.png)
 
 ![显示与主题](display.png)
 
@@ -11,7 +11,7 @@
 ## 已实现
 
 - 三页原生桌面 UI：仪表盘 / 显示与主题 / 服务与设置
-- 480×480 屏幕预览、CPU/GPU/内存卡片、实时状态
+- 480×480 实时预览（C# 服务 preview IPC 返回 JPEG，每 2 秒刷新）、CPU/GPU/内存卡片、实时状态
 - 通过 `SamaDisplay.IPC` 读取：连接状态、端口、固件、帧数、帧耗时、温度、负载、频率、内存、刷新间隔、主题、亮度
 - 按钮下发：`start`（刷新关键帧）、`theme`、`brightness`、`interval`、`rotate`
 - 软件渲染（`renderer-software`），不依赖 OpenGL/C++ 运行时

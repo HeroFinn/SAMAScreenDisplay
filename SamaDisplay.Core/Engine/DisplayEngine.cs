@@ -309,6 +309,18 @@ public sealed class DisplayEngine : IDisposable
                     }
                     return new IpcResponse { Ok = true, Status = GetStatus() };
                 }
+                case "preview":
+                {
+                    AppSettings cfg;
+                    lock (_gate) cfg = _settings.Clone();
+                    var jpeg = _renderer.RenderJpeg(_sensors.GetSnapshot(), cfg);
+                    return new IpcResponse
+                    {
+                        Ok = true,
+                        ImageBase64 = Convert.ToBase64String(jpeg),
+                        Status = GetStatus()
+                    };
+                }
                 case "ping":
                     return IpcResponse.Success("pong");
                 default:

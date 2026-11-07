@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "sama-display-slint"
 version = "0.1.0"
 edition = "2021"
@@ -8,7 +8,9 @@ slint = { version = "1.8", default-features = false, features = ["std", "compat-
 chrono = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+base64 = "0.22"
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Services"] }
 
 [build-dependencies]
 slint-build = "1.8"
+

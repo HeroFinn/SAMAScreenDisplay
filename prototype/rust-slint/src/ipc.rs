@@ -11,6 +11,7 @@ pub struct IpcResponse {
     pub error: Option<String>,
     pub message: Option<String>,
     pub status: Option<StatusDto>,
+    pub image_base64: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -80,4 +81,19 @@ pub fn command(payload: &str) -> Result<(), String> {
     } else {
         Err(response.error.unwrap_or_else(|| "request failed".to_string()))
     }
+}
+
+/// Fetch a rendered 480x480 dashboard JPEG (base64) and the current status.
+pub fn preview() -> Result<(StatusDto, String), String> {
+    let line = send_line(r#"{"Cmd":"preview"}"#)?;
+    let response: IpcResponse =
+        serde_json::from_str(line.trim()).map_err(|e| format!("json: {e}"))?;
+    if !response.ok {
+        return Err(response.error.unwrap_or_else(|| "preview failed".to_string()));
+    }
+    let status = response.status.ok_or_else(|| "missing status".to_string())?;
+    let image = response
+        .image_base64
+        .ok_or_else(|| "missing preview image".to_string())?;
+    Ok((status, image))
 }

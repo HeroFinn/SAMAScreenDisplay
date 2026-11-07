@@ -3,6 +3,7 @@
 mod ipc;
 mod service;
 
+use base64::Engine;
 use std::time::Duration;
 
 slint::include_modules!();
@@ -50,15 +51,18 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     });
 
-    // Poll the C# service over its named pipe.
+    // Poll the C# service: status + a freshly rendered dashboard preview.
     let weak = ui.as_weak();
     std::thread::spawn(move || loop {
-        let result = ipc::status();
+        let result = match ipc::preview() {
+            Ok(value) => Ok(value),
+            Err(_) => ipc::status().map(|status| (status, String::new())),
+        };
         let weak = weak.clone();
         let _ = slint::invoke_from_event_loop(move || {
             if let Some(ui) = weak.upgrade() {
                 match result {
-                    Ok(st) => {
+                    Ok((st, image_b64)) => {
                         ui.set_starting(false);
                         ui.set_status_text("已连接".into());
                         ui.set_connected(st.connected);
@@ -82,6 +86,20 @@ fn main() -> Result<(), slint::PlatformError> {
                         ui.set_gpu_load(load(st.sensors.gpu_load).into());
                         ui.set_gpu_clock(clock_mhz(st.sensors.gpu_clock_mhz).into());
                         ui.set_ram_percent(load(st.sensors.ram_percent).into());
+
+                        if !image_b64.is_empty() {
+                            if let Ok(bytes) =
+                                base64::engine::general_purpose::STANDARD.decode(image_b64)
+                            {
+                                let path = std::env::temp_dir()
+                                    .join(format!("sama_preview_{}.jpg", std::process::id()));
+                                if std::fs::write(&path, &bytes).is_ok() {
+                                    if let Ok(image) = slint::Image::load_from_path(&path) {
+                                        ui.set_preview_image(image);
+                                    }
+                                }
+                            }
+                        }
                     }
                     Err(_) => {
                         ui.set_connected(false);

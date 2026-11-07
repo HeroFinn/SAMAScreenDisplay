@@ -15,6 +15,7 @@ public sealed class IpcResponse
     public string? Error { get; set; }
     public string? Message { get; set; }
     public StatusDto? Status { get; set; }
+    public string? ImageBase64 { get; set; }
 
     public static IpcResponse Fail(string error) => new() { Ok = false, Error = error };
     public static IpcResponse Success(string? message = null) => new() { Ok = true, Message = message };

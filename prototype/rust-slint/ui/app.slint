@@ -248,6 +248,7 @@ export component AppWindow inherits Window {
     in-out property <bool> connected: true;
     in-out property <bool> starting: false;
     in-out property <string> status-text: "已连接";
+    in-out property <image> preview-image: @image-url("assets/dashboard-preview.png");
     in-out property <bool> service-mode: true;
     in-out property <int> theme: 0;
     in-out property <float> interval-value: 3;
@@ -437,7 +438,7 @@ export component AppWindow inherits Window {
                 Image {
                     x: 8px; y: 8px;
                     width: 440px; height: 440px;
-                    source: @image-url("assets/dashboard-preview.png");
+                    source: root.preview-image;
                     image-fit: contain;
                 }
             }
