@@ -43,6 +43,7 @@ fn main() -> Result<(), slint::PlatformError> {
     }
     let ui = AppWindow::new()?;
     let _tray = tray::install(ui.as_weak());
+    single_instance::listen(ui.as_weak());
     ui.set_autostart(autostart::is_enabled());
 
     // Intercept WM_CLOSE: the X button hides the window to tray instead of quitting.
