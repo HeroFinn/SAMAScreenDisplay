@@ -30,6 +30,10 @@ fn clock_mhz(value: Option<f64>) -> String {
 }
 
 fn main() -> Result<(), slint::PlatformError> {
+    if std::env::args().any(|arg| arg == "--toggle-autostart") {
+        autostart::toggle();
+        return Ok(());
+    }
     if std::env::args().any(|arg| arg == "--toggle-service") {
         let _ = service::toggle();
         return Ok(());
