@@ -29,6 +29,19 @@ fn clock_mhz(value: Option<f64>) -> String {
         .unwrap_or_else(|| "--".into())
 }
 
+fn hold_loading(ui: &AppWindow) {
+    ui.set_loading_hold(true);
+    let weak = ui.as_weak();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(2));
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                ui.set_loading_hold(false);
+            }
+        });
+    });
+}
+
 fn main() -> Result<(), slint::PlatformError> {
     if std::env::args().any(|arg| arg == "--toggle-autostart") {
         autostart::toggle();
@@ -56,6 +69,25 @@ fn main() -> Result<(), slint::PlatformError> {
                 if let RawWindowHandle::Win32(win32) = handle.as_raw() {
                     let _ = window::install_close_to_tray(win32.hwnd.get());
                 }
+            }
+        }
+    });
+
+    // Reconnect loading animation.
+    let loading_timer = slint::Timer::default();
+    let weak_loading = ui.as_weak();
+    loading_timer.start(slint::TimerMode::Repeated, Duration::from_millis(60), move || {
+        if let Some(ui) = weak_loading.upgrade() {
+            if ui.get_reconnecting() || ui.get_loading_hold() {
+                let mut pos = ui.get_loading_pos() + 0.012;
+                if pos > 1.0 {
+                    pos = 0.0;
+                }
+                ui.set_loading_pos(pos);
+                ui.set_loading_dots((ui.get_loading_dots() + 1) % 4);
+            } else {
+                ui.set_loading_pos(0.0);
+                ui.set_loading_dots(0);
             }
         }
     });
@@ -102,6 +134,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         ui.set_frames(st.frames_sent.to_string().into());
                         ui.set_frame_ms(format!("{:.0}", st.last_frame_ms).into());
                         ui.set_service_mode(st.service_mode);
+                        ui.set_reconnecting(st.reconnecting);
                         ui.set_interval(format!("{} s", st.interval_seconds).into());
                         if first_sync {
                             ui.set_interval_value(st.interval_seconds as f32);
@@ -136,6 +169,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     }
                     Err(_) => {
                         ui.set_connected(false);
+                        ui.set_reconnecting(false);
                         if !ui.get_starting() {
                             ui.set_status_text("未连接".into());
                         }
@@ -147,7 +181,12 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     // Refresh keyframe.
-    ui.on_refresh(|| {
+    let weak_refresh = ui.as_weak();
+    ui.on_refresh(move || {
+        if let Some(ui) = weak_refresh.upgrade() {
+            ui.set_reconnecting(true);
+            hold_loading(&ui);
+        }
         std::thread::spawn(|| {
             let _ = ipc::command(r#"{"Cmd":"start"}"#);
         });
@@ -156,6 +195,8 @@ fn main() -> Result<(), slint::PlatformError> {
     let weak_apply = ui.as_weak();
     ui.on_apply_settings(move || {
         let Some(ui) = weak_apply.upgrade() else { return };
+        ui.set_reconnecting(true);
+        hold_loading(&ui);
         let theme = match ui.get_theme() {
             1 => "Neon",
             2 => "Minimal",

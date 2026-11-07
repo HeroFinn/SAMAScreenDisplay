@@ -27,6 +27,7 @@ public sealed class StatusDto
     public string? Port { get; set; }
     public string? Version { get; set; }
     public bool Displaying { get; set; }
+    public bool Reconnecting { get; set; }
     public long FramesSent { get; set; }
     public double LastFrameMs { get; set; }
     public string? LastError { get; set; }

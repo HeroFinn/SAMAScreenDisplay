@@ -21,6 +21,7 @@ pub struct StatusDto {
     pub port: Option<String>,
     pub version: Option<String>,
     pub displaying: bool,
+    pub reconnecting: bool,
     pub frames_sent: i64,
     pub last_frame_ms: f64,
     pub last_error: Option<String>,

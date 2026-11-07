@@ -22,6 +22,7 @@ public sealed class DisplayEngine : IDisposable
     private Thread? _heartbeat;
     private volatile bool _running;
     private volatile bool _displaying;
+    private volatile bool _reconnecting;
     private bool _needKeyframe = true;
     private byte[]? _lastBgra;
     private uint _seq;
@@ -111,6 +112,7 @@ public sealed class DisplayEngine : IDisposable
                                 _seq = 0;
                                 _needKeyframe = false;
                                 _lastKeyframeUtc = DateTime.UtcNow;
+                                _reconnecting = false;
                             }
                             else
                             {
@@ -127,6 +129,7 @@ public sealed class DisplayEngine : IDisposable
                         {
                             _lastBgra = bgra;
                             _seq++;
+                            _reconnecting = false;
                         }
                         else if (needResend)
                         {
@@ -134,6 +137,7 @@ public sealed class DisplayEngine : IDisposable
                             _device.Close();
                             _lastBgra = null;
                             _needKeyframe = true;
+                            _reconnecting = true;
                             lastConnectAttempt = DateTime.MinValue;
                         }
                     }
@@ -214,6 +218,7 @@ public sealed class DisplayEngine : IDisposable
         lock (_gate) { _settings.AutoStartDisplay = true; _settings.Save(_settingsPath); }
         _needKeyframe = true;
         _lastBgra = null;
+        _reconnecting = true;
         _displaying = true;
         try { _device.Close(); } catch { }
         _wake.Set();
@@ -236,6 +241,7 @@ public sealed class DisplayEngine : IDisposable
             Port = _device.PortName,
             Version = _device.Version,
             Displaying = _displaying,
+            Reconnecting = _reconnecting,
             FramesSent = Interlocked.Read(ref _frames),
             LastFrameMs = _lastFrameMs,
             LastError = _lastError,
@@ -302,6 +308,7 @@ public sealed class DisplayEngine : IDisposable
                     try { if (_device.IsOpen) _device.SetRotate((byte)value); } catch { }
                     _needKeyframe = true;
                     _lastBgra = null;
+                    _reconnecting = true;
                     try { _device.Close(); } catch { }
                     _wake.Set();
                     return new IpcResponse { Ok = true, Status = GetStatus() };

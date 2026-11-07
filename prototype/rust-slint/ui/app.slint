@@ -246,6 +246,10 @@ export component AppWindow inherits Window {
     in-out property <string> interval: "3 s";
     in-out property <bool> connected: true;
     in-out property <bool> starting: false;
+    in-out property <bool> reconnecting: false;
+    in-out property <bool> loading-hold: false;
+    in-out property <float> loading-pos: 0;
+    in-out property <int> loading-dots: 0;
     in-out property <bool> autostart: false;
     in-out property <string> status-text: "已连接";
     in-out property <image> preview-image: @image-url("assets/dashboard-preview.png");
@@ -383,15 +387,15 @@ export component AppWindow inherits Window {
         x: parent.width - 136px; y: 26px;
         width: 110px; height: 26px;
         border-radius: 13px;
-        background: root.starting ? #3a2a12 : root.connected ? #123326 : #331b1b;
+        background: (root.reconnecting || root.loading-hold) ? #3a2a12 : root.starting ? #3a2a12 : root.connected ? #123326 : #331b1b;
         border-width: 1px;
-        border-color: root.starting ? #8a5a12 : root.connected ? #1f6b4a : #7f1d1d;
+        border-color: (root.reconnecting || root.loading-hold) ? #8a5a12 : root.starting ? #8a5a12 : root.connected ? #1f6b4a : #7f1d1d;
     }
     Text {
         x: parent.width - 136px; y: 31px;
         width: 110px;
-        text: root.status-text;
-        color: root.starting ? #fbbf24 : root.connected ? #34d399 : #f87171;
+        text: (root.reconnecting || root.loading-hold) ? "重建连接" : root.status-text;
+        color: (root.reconnecting || root.loading-hold) ? #fbbf24 : root.starting ? #fbbf24 : root.connected ? #34d399 : #f87171;
         font-size: 11px;
         font-weight: 700;
         horizontal-alignment: center;
@@ -638,6 +642,49 @@ export component AppWindow inherits Window {
                 text: "安装/卸载会弹出 UAC 管理员确认；开机启动写入当前用户 Run 键。";
                 color: #64748b; font-size: 10px; wrap: word-wrap;
             }
+        }
+    }
+
+    // reconnect loading overlay
+    if root.reconnecting || root.loading-hold : Rectangle {
+        x: 252px; y: 92px;
+        width: parent.width - 276px;
+        height: parent.height - 142px;
+        background: #0b1018f2;
+        border-radius: 18px;
+        border-width: 1px;
+        border-color: #2b3a52;
+
+        TouchArea { }
+
+        Text {
+            x: 0px; y: parent.height / 2 - 64px;
+            width: parent.width;
+            text: "正在重建连接" + (root.loading-dots == 1 ? "." : root.loading-dots == 2 ? ".." : root.loading-dots == 3 ? "..." : "");
+            color: #f8fafc;
+            font-size: 18px;
+            font-weight: 700;
+            horizontal-alignment: center;
+        }
+        Text {
+            x: 0px; y: parent.height / 2 - 34px;
+            width: parent.width;
+            text: "旋转/刷新需要重新建立关键帧，请稍候";
+            color: #8fa0b8;
+            font-size: 11px;
+            horizontal-alignment: center;
+        }
+        Rectangle {
+            x: parent.width / 2 - 130px; y: parent.height / 2 + 12px;
+            width: 260px; height: 4px;
+            border-radius: 2px;
+            background: #1e293b;
+        }
+        Rectangle {
+            x: parent.width / 2 - 130px + root.loading-pos * 200px; y: parent.height / 2 + 12px;
+            width: 60px; height: 4px;
+            border-radius: 2px;
+            background: #7c5cff;
         }
     }
 
