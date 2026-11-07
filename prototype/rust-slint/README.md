@@ -37,7 +37,7 @@ cargo run
 
 ## 服务自动拉起
 
-- 应用启动时先探测 `SamaDisplay.IPC`；无响应则自动执行 `sc start SamaDisplaySvc`，最多等待 12 秒。
+- 应用启动时先探测 `SamaDisplay.IPC`；无响应则通过 Win32 SCM API（`OpenSCManagerW → OpenServiceW → StartServiceW`）直接启动服务，不创建 `sc.exe` 子进程，最多等待 12 秒。
 - 安装器会通过 SDDL 给普通用户授予该服务的启动/停止/查询权限，因此不需要每次弹 UAC。
 - 若服务未安装或启动失败，界面显示“服务未启动/未连接”，并保留 mock 数据。
 
