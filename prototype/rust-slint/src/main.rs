@@ -2,6 +2,8 @@
 
 mod ipc;
 mod service;
+mod single_instance;
+mod tray;
 
 use base64::Engine;
 use std::time::Duration;
@@ -23,7 +25,15 @@ fn clock_mhz(value: Option<f64>) -> String {
 }
 
 fn main() -> Result<(), slint::PlatformError> {
+    if std::env::args().any(|arg| arg == "--toggle-service") {
+        let _ = service::toggle();
+        return Ok(());
+    }
+    if !single_instance::acquire() {
+        return Ok(());
+    }
     let ui = AppWindow::new()?;
+    let _tray = tray::install(ui.as_weak());
 
     // Local clock.
     let weak = ui.as_weak();
@@ -141,7 +151,11 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     });
 
-    ui.on_toggle_service(|| println!("toggle service requested"));
+    ui.on_toggle_service(|| {
+        std::thread::spawn(|| {
+            let _ = service::toggle();
+        });
+    });
 
     ui.set_clock(chrono::Local::now().format("%H:%M:%S").to_string().into());
     if let Ok(page) = std::env::var("PAGE") {
