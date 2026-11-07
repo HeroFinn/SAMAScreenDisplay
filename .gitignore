@@ -8,3 +8,4 @@ dist/
 *.log
 install/prereq/PawnIO_setup.exe
 prototype/rust-slint/target/
+*.msi

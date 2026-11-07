@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Continue'
 $root = $PSScriptRoot
 
-Get-Process sama-display-slint -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-Process SamaDisplay.Slint,sama-display-slint -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
 $appDir = Join-Path $env:ProgramFiles 'SamaDisplay\App'
 Remove-Item (Join-Path $appDir 'SamaDisplay.Slint.exe') -Force -ErrorAction SilentlyContinue

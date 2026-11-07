@@ -26,6 +26,16 @@
 
 ## 安装
 
+### MSI（推荐）
+
+```powershell
+msiexec /i SamaDisplay.msi
+```
+
+MSI 会安装 Rust 前端、C# 服务、PawnIO、快捷方式，并注册 `SamaDisplaySvc`。
+
+### PowerShell 脚本
+
 发布包内右键 `install-rust.ps1` → 以管理员身份运行。脚本会安装服务、PawnIO、Rust 前端，并创建开始菜单/桌面快捷方式。
 
 ## 构建

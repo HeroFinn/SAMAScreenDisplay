@@ -1,0 +1,51 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="SAMA Display"
+           Manufacturer="HeroFinn"
+           Version="1.0.0.0"
+           UpgradeCode="8B7F2C4E-2D7A-4A6E-9C1B-6F3D2A9E5C41"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of SAMA Display is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="SamaDisplay">
+        <Directory Id="AppFolder" Name="App" />
+        <Directory Id="ServiceFolder" Name="service" />
+        <Directory Id="InstallFolder" Name="install">
+          <Directory Id="PrereqFolder" Name="prereq" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="SAMA Display" />
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
+
+    <CustomAction Id="InstallPawnIO"
+                  FileRef="PawnIOSetup"
+                  ExeCommand="-install -silent"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <CustomAction Id="SetServiceSddl"
+                  Directory="SystemFolder"
+                  ExeCommand="cmd.exe /c sc.exe sdset SamaDisplaySvc &quot;D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWRPWPDTLOCRRC;;;AU)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="InstallPawnIO" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="SetServiceSddl" After="InstallServices" Condition="NOT Installed" />
+    </InstallExecuteSequence>
+
+    <Feature Id="MainFeature" Title="SAMA Display" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Package>
+</Wix>
+
