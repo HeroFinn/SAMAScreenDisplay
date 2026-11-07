@@ -1,0 +1,9 @@
+bin/
+obj/
+dist/
+.vs/
+*.user
+*.suo
+*.zip
+*.log
+install/prereq/PawnIO_setup.exe
