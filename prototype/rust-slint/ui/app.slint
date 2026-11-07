@@ -258,6 +258,8 @@ export component AppWindow inherits Window {
     callback refresh();
     callback toggle-service();
     callback apply-settings();
+    callback open-logs();
+    callback restart-service();
 
     // ---------------- sidebar ----------------
     Rectangle {
@@ -620,8 +622,8 @@ export component AppWindow inherits Window {
                 text: "日志：C:\\ProgramData\\SamaDisplay\\service.log\n配置：C:\\ProgramData\\SamaDisplay\\settings.json";
                 color: #8fa0b8; font-size: 11px; wrap: word-wrap;
             }
-            ActionButton { x: 20px; y: 110px; width: 170px; label: "打开日志目录"; }
-            ActionButton { x: 20px; y: 158px; width: 170px; label: "重新安装服务"; }
+            ActionButton { x: 20px; y: 110px; width: 170px; label: "打开日志目录"; clicked => { root.open-logs(); } }
+            ActionButton { x: 20px; y: 158px; width: 170px; label: "重启服务"; clicked => { root.restart-service(); } }
             Text {
                 x: 20px; y: 220px; width: parent.width - 40px;
                 text: "原型只做界面与 IPC 验证，按钮暂不执行真实安装/卸载。";

@@ -151,6 +151,20 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     });
 
+    ui.on_open_logs(|| {
+        let _ = std::process::Command::new("explorer.exe")
+            .arg(r"C:\ProgramData\SamaDisplay")
+            .spawn();
+    });
+
+    ui.on_restart_service(|| {
+        std::thread::spawn(|| {
+            let _ = service::stop();
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            let _ = service::ensure_running();
+        });
+    });
+
     ui.on_toggle_service(|| {
         std::thread::spawn(|| {
             let _ = service::toggle();
