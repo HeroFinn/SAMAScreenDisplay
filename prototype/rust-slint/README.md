@@ -15,6 +15,7 @@
 - 通过 `SamaDisplay.IPC` 读取：连接状态、端口、固件、帧数、帧耗时、温度、负载、频率、内存、刷新间隔、主题、亮度
 - 按钮下发：`start`（刷新关键帧）、`theme`、`brightness`、`interval`、`rotate`
 - 软件渲染（`renderer-software`），不依赖 OpenGL/C++ 运行时
+- GUI 子系统（`#![windows_subsystem = "windows"]`），双击 exe 不会再弹控制台黑框
 - 界面 1240×800，深色卡片 + 紫/青强调色，与 WPF 版保持一致
 
 ## 构建
