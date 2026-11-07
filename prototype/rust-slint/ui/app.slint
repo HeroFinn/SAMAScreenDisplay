@@ -1,0 +1,647 @@
+// SAMA Display — Rust + Slint control panel prototype.
+// Visual language mirrors the WPF app: deep navy, violet/cyan accents, flat cards.
+
+component Card inherits Rectangle {
+    background: #151d2a;
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: #263246;
+}
+
+component NavItem inherits Rectangle {
+    in property <string> label;
+    in property <bool> active;
+    callback clicked();
+
+    height: 44px;
+    border-radius: 10px;
+    background: active ? #202a3d : transparent;
+    animate background { duration: 120ms; }
+
+    Text {
+        x: 16px;
+        height: parent.height; vertical-alignment: center;
+        text: root.label;
+        color: root.active ? #f8fafc : #8fa0b8;
+        font-size: 14px;
+        font-weight: root.active ? 600 : 400;
+    }
+
+    Rectangle {
+        x: 0px;
+        width: 3px;
+        height: 20px;
+        border-radius: 2px;
+        y: (parent.height - 20px) / 2;
+        background: #7c5cff;
+        visible: root.active;
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component ActionButton inherits Rectangle {
+    in property <string> label;
+    in property <bool> primary: false;
+    callback clicked();
+
+    height: 38px;
+    border-radius: 10px;
+    background: primary ? #7c5cff : #1b2433;
+    border-width: primary ? 0px : 1px;
+    border-color: #2b3850;
+    animate background { duration: 120ms; }
+
+    Text {
+        text: root.label;
+        color: primary ? #ffffff : #dbe4f0;
+        font-size: 13px;
+        font-weight: 600;
+        width: parent.width; horizontal-alignment: center;
+        height: parent.height; vertical-alignment: center;
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component MetricCard inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <string> value;
+    in property <string> unit;
+    in property <float> ratio: 0.5;
+    in property <color> accent: #7c5cff;
+
+    height: 108px;
+    background: #141c29;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: #253146;
+
+    Rectangle {
+        x: 1px; y: 18px; width: 3px; height: parent.height - 36px;
+        border-radius: 2px; background: root.accent;
+    }
+
+    Text {
+        x: 16px; y: 12px;
+        text: root.title;
+        color: root.accent;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    Text {
+        x: 16px; y: 30px;
+        text: root.subtitle;
+        color: #8fa0b8;
+        font-size: 11px;
+    }
+    Text {
+        x: 16px; y: 52px;
+        text: root.value;
+        color: #f8fafc;
+        font-size: 26px;
+        font-weight: 700;
+    }
+    Text {
+        x: 86px; y: 64px;
+        text: root.unit;
+        color: #8fa0b8;
+        font-size: 11px;
+    }
+
+    Rectangle {
+        x: 16px; y: 88px;
+        width: parent.width - 32px; height: 5px;
+        border-radius: 3px;
+        background: #1e293b;
+    }
+    Rectangle {
+        x: 16px; y: 88px;
+        width: (parent.width - 32px) * clamp(root.ratio, 0.0, 1.0);
+        height: 5px;
+        border-radius: 3px;
+        background: root.accent;
+        animate width { duration: 260ms; }
+    }
+}
+
+component StatusRow inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <color> value-color: #e2e8f0;
+
+    height: 30px;
+    background: transparent;
+
+    Text {
+        x: 0px; height: parent.height; vertical-alignment: center;
+        text: root.label;
+        color: #8fa0b8;
+        font-size: 12px;
+    }
+    Text {
+        x: 0px; width: parent.width; horizontal-alignment: right; height: parent.height; vertical-alignment: center;
+        text: root.value;
+        color: root.value-color;
+        font-size: 12px;
+        font-weight: 600;
+    }
+}
+
+component SettingSlider inherits Rectangle {
+    in property <float> value: 0.5;
+    in property <float> max: 100;
+    in-out property <string> caption;
+    callback changed(float);
+
+    height: 34px;
+
+    track := Rectangle {
+        x: 0px; y: 14px;
+        width: parent.width; height: 6px;
+        border-radius: 3px;
+        background: #1e293b;
+    }
+    fill := Rectangle {
+        x: 0px; y: 14px;
+        width: parent.width * clamp(root.value / root.max, 0.0, 1.0);
+        height: 6px;
+        border-radius: 3px;
+        background: @linear-gradient(90deg, #7c5cff 0%, #22d3ee 100%);
+    }
+    handle := Rectangle {
+        x: fill.width - 7px; y: 8px;
+        width: 18px; height: 18px;
+        border-radius: 9px;
+        background: #f8fafc;
+        border-width: 3px;
+        border-color: #7c5cff;
+    }
+    Text {
+        x: 0px; width: parent.width; horizontal-alignment: right;
+        y: -2px;
+        text: root.caption;
+        color: #cbd5e1;
+        font-size: 11px;
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.changed(clamp((ta.mouse-x / root.width) * root.max, 0.0, root.max));
+        }
+    }
+}
+
+component ThemeChip inherits Rectangle {
+    in property <string> label;
+    in property <bool> selected;
+    callback clicked();
+
+    width: 92px;
+    height: 32px;
+    border-radius: 8px;
+    background: selected ? #7c5cff : #1b2433;
+    border-width: selected ? 0px : 1px;
+    border-color: #2b3850;
+
+    Text {
+        text: root.label;
+        color: selected ? #ffffff : #cbd5e1;
+        font-size: 12px;
+        font-weight: 600;
+        width: parent.width; horizontal-alignment: center;
+        height: parent.height; vertical-alignment: center;
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component AppWindow inherits Window {
+    title: "SAMA Display · Rust + Slint";
+    width: 1240px;
+    height: 800px;
+    background: #0b0f14;
+    default-font-family: "Segoe UI";
+    default-font-size: 13px;
+
+    in-out property <int> page: 0;
+    in-out property <string> clock: "00:00:00";
+    in-out property <string> cpu-temp: "63";
+    in-out property <string> cpu-load: "8";
+    in-out property <string> gpu-temp: "55";
+    in-out property <string> gpu-load: "0";
+    in-out property <string> ram-percent: "34";
+    in-out property <string> cpu-clock: "3.4 GHz";
+    in-out property <string> gpu-clock: "--";
+    in-out property <string> port: "COM9";
+    in-out property <string> firmware: "chs_34inch.dev1_rom1.88";
+    in-out property <string> frames: "0";
+    in-out property <string> frame-ms: "0";
+    in-out property <string> interval: "3 s";
+    in-out property <bool> connected: true;
+    in-out property <bool> service-mode: true;
+    in-out property <int> theme: 0;
+    in-out property <float> interval-value: 3;
+    in-out property <float> brightness: 170;
+    in-out property <int> rotate: 0;
+
+    callback refresh();
+    callback toggle-service();
+    callback apply-settings();
+
+    // ---------------- sidebar ----------------
+    Rectangle {
+        x: 0px; y: 0px; width: 224px; height: parent.height;
+        background: #0d131d;
+        border-width: 1px;
+        border-color: #1c2636;
+
+        Text {
+            x: 22px; y: 22px;
+            text: "SAMA";
+            color: #f8fafc;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        Text {
+            x: 23px; y: 54px;
+            text: "DISPLAY";
+            color: #7c5cff;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        Rectangle {
+            x: 22px; y: 84px; width: 180px; height: 1px;
+            background: #1c2636;
+        }
+
+        NavItem {
+            x: 14px; y: 104px; width: 196px;
+            label: "仪表盘";
+            active: root.page == 0;
+            clicked => { root.page = 0; }
+        }
+        NavItem {
+            x: 14px; y: 154px; width: 196px;
+            label: "显示与主题";
+            active: root.page == 1;
+            clicked => { root.page = 1; }
+        }
+        NavItem {
+            x: 14px; y: 204px; width: 196px;
+            label: "服务与设置";
+            active: root.page == 2;
+            clicked => { root.page = 2; }
+        }
+
+        // device card
+        Card {
+            x: 14px; y: parent.height - 154px;
+            width: 196px; height: 132px;
+            background: #121a26;
+
+            Rectangle {
+                x: 14px; y: 16px; width: 8px; height: 8px;
+                border-radius: 4px;
+                background: root.connected ? #34d399 : #f87171;
+            }
+            Text {
+                x: 28px; y: 10px;
+                text: "SAMA 3.4\" LCD";
+                color: #e2e8f0;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            Text {
+                x: 14px; y: 34px;
+                text: "端口 " + root.port;
+                color: #8fa0b8;
+                font-size: 11px;
+            }
+            Text {
+                x: 14px; y: 52px;
+                text: root.service-mode ? "服务模式 · 后台运行" : "本地模式 · 界面内运行";
+                color: root.service-mode ? #22d3ee : #fbbf24;
+                font-size: 10px;
+            }
+            Text {
+                x: 14px; y: 74px;
+                width: parent.width - 28px;
+                text: root.firmware;
+                color: #64748b;
+                font-size: 9px;
+                wrap: word-wrap;
+            }
+        }
+
+        Text {
+            x: 22px; y: parent.height - 26px;
+            text: "Rust + Slint prototype";
+            color: #475569;
+            font-size: 9px;
+        }
+    }
+
+    // ---------------- header ----------------
+    Text {
+        x: 252px; y: 20px;
+        text: root.page == 0 ? "仪表盘" : root.page == 1 ? "显示与主题" : "服务与设置";
+        color: #f8fafc;
+        font-size: 24px;
+        font-weight: 700;
+    }
+    Text {
+        x: 252px; y: 54px;
+        text: root.page == 0
+            ? "独立 C# 服务 · 0xCC 增量刷新 · 不依赖官方引擎"
+            : root.page == 1
+            ? "主题、旋转、亮度与刷新间隔"
+            : "服务状态、启停与安装维护";
+        color: #8fa0b8;
+        font-size: 12px;
+    }
+
+    // clock + status pill
+    Text {
+        x: parent.width - 250px; y: 24px;
+        text: root.clock;
+        color: #f8fafc;
+        font-size: 22px;
+        font-weight: 600;
+        horizontal-alignment: right;
+        width: 120px;
+    }
+    Rectangle {
+        x: parent.width - 118px; y: 26px;
+        width: 92px; height: 26px;
+        border-radius: 13px;
+        background: root.connected ? #123326 : #331b1b;
+        border-width: 1px;
+        border-color: root.connected ? #1f6b4a : #7f1d1d;
+    }
+    Text {
+        x: parent.width - 118px; y: 31px;
+        width: 92px;
+        text: root.connected ? "已连接" : "未连接";
+        color: root.connected ? #34d399 : #f87171;
+        font-size: 11px;
+        font-weight: 700;
+        horizontal-alignment: center;
+    }
+
+    // ---------------- page 0: dashboard ----------------
+    if root.page == 0 : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        background: transparent;
+
+        // preview card
+        Card {
+            x: 252px; y: 92px;
+            width: 500px; height: 590px;
+
+            Text {
+                x: 18px; y: 14px;
+                text: "屏幕预览";
+                color: #e2e8f0;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            Text {
+                x: parent.width - 120px; y: 15px;
+                width: 100px;
+                text: "480 × 480";
+                color: #64748b;
+                font-size: 10px;
+                horizontal-alignment: right;
+            }
+            Rectangle {
+                x: 22px; y: 44px;
+                width: 456px; height: 456px;
+                border-radius: 12px;
+                background: #0b0f14;
+                border-width: 1px;
+                border-color: #263246;
+                clip: true;
+
+                Image {
+                    x: 8px; y: 8px;
+                    width: 440px; height: 440px;
+                    source: @image-url("assets/dashboard-preview.png");
+                    image-fit: contain;
+                }
+            }
+            Text {
+                x: 22px; y: 514px;
+                text: "预览为设计稿；实际面板由服务端 C8 + 0xCC 渲染。";
+                color: #64748b;
+                font-size: 10px;
+            }
+            ActionButton {
+                x: 22px; y: 540px; width: 130px;
+                label: "刷新一帧";
+                primary: true;
+                clicked => { root.refresh(); }
+            }
+            Text {
+                x: 166px; y: 550px;
+                text: "已发送 " + root.frames + " 帧 · " + root.frame-ms + " ms/帧";
+                color: #8fa0b8;
+                font-size: 10px;
+            }
+        }
+
+        // metric column
+        MetricCard {
+            x: 776px; y: 92px; width: 432px;
+            title: "CPU";
+            subtitle: "AMD Ryzen 9 9950X";
+            value: root.cpu-temp;
+            unit: "°C";
+            ratio: 0.63;
+            accent: #7c5cff;
+        }
+        MetricCard {
+            x: 776px; y: 212px; width: 432px;
+            title: "GPU";
+            subtitle: "AMD Radeon(TM) Graphics";
+            value: root.gpu-temp;
+            unit: "°C";
+            ratio: 0.55;
+            accent: #22d3ee;
+        }
+        MetricCard {
+            x: 776px; y: 332px; width: 432px;
+            title: "MEMORY";
+            subtitle: "WENZHAO · 32 GB";
+            value: root.ram-percent;
+            unit: "%";
+            ratio: 0.34;
+            accent: #34d399;
+        }
+
+        // live stats card
+        Card {
+            x: 776px; y: 452px; width: 432px; height: 230px;
+
+            Text {
+                x: 18px; y: 14px;
+                text: "实时状态";
+                color: #e2e8f0;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            StatusRow { x: 18px; y: 46px; width: parent.width - 36px; label: "CPU 负载"; value: root.cpu-load + " %"; }
+            StatusRow { x: 18px; y: 76px; width: parent.width - 36px; label: "GPU 负载"; value: root.gpu-load + " %"; }
+            StatusRow { x: 18px; y: 106px; width: parent.width - 36px; label: "CPU 频率"; value: root.cpu-clock; }
+            StatusRow { x: 18px; y: 136px; width: parent.width - 36px; label: "GPU 频率"; value: root.gpu-clock; }
+            StatusRow { x: 18px; y: 166px; width: parent.width - 36px; label: "刷新间隔"; value: root.interval; }
+            StatusRow {
+                x: 18px; y: 196px; width: parent.width - 36px;
+                label: "端口";
+                value: root.port;
+                value-color: #22d3ee;
+            }
+        }
+    }
+
+    // ---------------- page 1: display ----------------
+    if root.page == 1 : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        background: transparent;
+
+        Card {
+            x: 252px; y: 92px; width: 560px; height: 330px;
+
+            Text { x: 20px; y: 16px; text: "主题"; color: #e2e8f0; font-size: 13px; font-weight: 700; }
+            Text { x: 20px; y: 38px; text: "匹配 WPF 版的三种配色"; color: #8fa0b8; font-size: 11px; }
+
+            ThemeChip { x: 20px; y: 66px; label: "Dark"; selected: root.theme == 0; clicked => { root.theme = 0; } }
+            ThemeChip { x: 120px; y: 66px; label: "Neon"; selected: root.theme == 1; clicked => { root.theme = 1; } }
+            ThemeChip { x: 220px; y: 66px; label: "Minimal"; selected: root.theme == 2; clicked => { root.theme = 2; } }
+
+            Text { x: 20px; y: 120px; text: "刷新间隔"; color: #e2e8f0; font-size: 12px; font-weight: 600; }
+            Text { x: parent.width - 70px; y: 120px; width: 50px; text: root.interval; color: #22d3ee; font-size: 12px; horizontal-alignment: right; }
+            SettingSlider {
+                x: 20px; y: 140px; width: parent.width - 40px;
+                value: root.interval-value; max: 10;
+                caption: "";
+                changed(v) => { root.interval-value = round(v); root.interval = round(v) + " s"; }
+            }
+
+            Text { x: 20px; y: 190px; text: "亮度"; color: #e2e8f0; font-size: 12px; font-weight: 600; }
+            Text { x: parent.width - 70px; y: 190px; width: 50px; text: round(root.brightness) + ""; color: #22d3ee; font-size: 12px; horizontal-alignment: right; }
+            SettingSlider {
+                x: 20px; y: 210px; width: parent.width - 40px;
+                value: root.brightness; max: 255;
+                caption: "";
+                changed(v) => { root.brightness = v; }
+            }
+
+            Text { x: 20px; y: 262px; text: "屏幕旋转"; color: #e2e8f0; font-size: 12px; font-weight: 600; }
+            ThemeChip { x: 20px; y: 284px; width: 70px; label: "0°"; selected: root.rotate == 0; clicked => { root.rotate = 0; } }
+            ThemeChip { x: 98px; y: 284px; width: 70px; label: "90°"; selected: root.rotate == 1; clicked => { root.rotate = 1; } }
+            ThemeChip { x: 176px; y: 284px; width: 70px; label: "180°"; selected: root.rotate == 2; clicked => { root.rotate = 2; } }
+            ThemeChip { x: 254px; y: 284px; width: 70px; label: "270°"; selected: root.rotate == 3; clicked => { root.rotate = 3; } }
+        }
+
+        Card {
+            x: 836px; y: 92px; width: 372px; height: 330px;
+            Text { x: 20px; y: 16px; text: "应用设置"; color: #e2e8f0; font-size: 13px; font-weight: 700; }
+            Text {
+                x: 20px; y: 44px; width: parent.width - 40px;
+                text: "原型阶段：滑块和选项会即时反映到界面，\n点击下方按钮模拟写入服务配置。";
+                color: #8fa0b8; font-size: 11px; wrap: word-wrap;
+            }
+            ActionButton {
+                x: 20px; y: 120px; width: 150px;
+                label: "应用到屏幕"; primary: true;
+                clicked => { root.apply-settings(); }
+            }
+            Text {
+                x: 20px; y: 180px; width: parent.width - 40px;
+                text: "当前：" + (root.theme == 0 ? "Dark" : root.theme == 1 ? "Neon" : "Minimal")
+                    + " · " + root.interval + " · 亮度 " + round(root.brightness)
+                    + " · 旋转 " + (root.rotate * 90) + "°";
+                color: #cbd5e1; font-size: 11px; wrap: word-wrap;
+            }
+        }
+    }
+
+    // ---------------- page 2: service ----------------
+    if root.page == 2 : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        background: transparent;
+
+        Card {
+            x: 252px; y: 92px; width: 540px; height: 330px;
+            Text { x: 20px; y: 16px; text: "后台服务"; color: #e2e8f0; font-size: 13px; font-weight: 700; }
+            Text {
+                x: 20px; y: 40px;
+                text: root.connected ? "SamaDisplaySvc · Running" : "SamaDisplaySvc · Stopped";
+                color: root.connected ? #34d399 : #f87171;
+                font-size: 16px; font-weight: 700;
+            }
+            StatusRow { x: 20px; y: 82px; width: parent.width - 40px; label: "运行模式"; value: root.service-mode ? "Windows 服务" : "本地引擎"; }
+            StatusRow { x: 20px; y: 112px; width: parent.width - 40px; label: "串口"; value: root.port; value-color: #22d3ee; }
+            StatusRow { x: 20px; y: 142px; width: parent.width - 40px; label: "固件"; value: root.firmware; }
+            StatusRow { x: 20px; y: 172px; width: parent.width - 40px; label: "已发送帧"; value: root.frames; }
+            StatusRow { x: 20px; y: 202px; width: parent.width - 40px; label: "最近帧耗时"; value: root.frame-ms + " ms"; }
+
+            ActionButton {
+                x: 20px; y: 250px; width: 130px;
+                label: "刷新一帧";
+                primary: true;
+                clicked => { root.refresh(); }
+            }
+            ActionButton {
+                x: 162px; y: 250px; width: 130px;
+                label: "启动 / 停止";
+                clicked => { root.toggle-service(); }
+            }
+        }
+
+        Card {
+            x: 816px; y: 92px; width: 392px; height: 330px;
+            Text { x: 20px; y: 16px; text: "维护"; color: #e2e8f0; font-size: 13px; font-weight: 700; }
+            Text {
+                x: 20px; y: 44px; width: parent.width - 40px;
+                text: "日志：C:\\ProgramData\\SamaDisplay\\service.log\n配置：C:\\ProgramData\\SamaDisplay\\settings.json";
+                color: #8fa0b8; font-size: 11px; wrap: word-wrap;
+            }
+            ActionButton { x: 20px; y: 110px; width: 170px; label: "打开日志目录"; }
+            ActionButton { x: 20px; y: 158px; width: 170px; label: "重新安装服务"; }
+            Text {
+                x: 20px; y: 220px; width: parent.width - 40px;
+                text: "原型只做界面与 IPC 验证，按钮暂不执行真实安装/卸载。";
+                color: #64748b; font-size: 10px; wrap: word-wrap;
+            }
+        }
+    }
+
+    // footer status
+    Rectangle {
+        x: 252px; y: parent.height - 30px; width: parent.width - 276px; height: 1px;
+        background: #1c2636;
+    }
+    Text {
+        x: 252px; y: parent.height - 22px;
+        text: root.service-mode ? "服务模式 · 独立驱动" : "本地模式";
+        color: #475569; font-size: 10px;
+    }
+    Text {
+        x: parent.width - 190px; y: parent.height - 22px;
+        width: 160px;
+        text: "SAMA Display · Rust/Slint";
+        color: #475569; font-size: 10px;
+        horizontal-alignment: right;
+    }
+}

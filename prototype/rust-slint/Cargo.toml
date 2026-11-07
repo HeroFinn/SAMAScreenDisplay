@@ -1,0 +1,13 @@
+[package]
+name = "sama-display-slint"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+slint = { version = "1.8", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software"] }
+chrono = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[build-dependencies]
+slint-build = "1.8"

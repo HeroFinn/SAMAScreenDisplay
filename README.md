@@ -60,3 +60,13 @@ CPU 温度由 LibreHardwareMonitor 0.9.6 读取，需要 **PawnIO 2.2.0** 内核
 - 屏幕只显示 SAMA logo：等待 10–20 秒让服务连上 COM9，或拔插一次 USB。
 - CPU 温度 `--`：确认 PawnIO 驱动存在：`Get-CimInstance Win32_SystemDriver -Filter "Name='PawnIO'"`。
 - 若用官方 APP 重新设置了背景，视频文件会被重新上传；需要再删除一次 `/mnt/SDCARD/video/4_90.mp4`。
+
+## Rust + Slint 控制面板原型
+
+prototype/rust-slint 是用 Rust + Slint 重写的桌面控制面板原型，通过现有命名管道 SamaDisplay.IPC 读取状态并下发设置，不依赖 .NET/WPF 前端。
+
+- 三页界面：仪表盘 / 显示与主题 / 服务与设置
+- 实时状态：CPU/GPU 温度、负载、频率、内存、帧数、端口
+- 可下发：start / stop / theme / brightness / interval / rotate
+- 软件渲染，无需 OpenGL/C++ 运行时
+- 截图与构建说明见 [prototype/rust-slint/README.md](prototype/rust-slint/README.md)

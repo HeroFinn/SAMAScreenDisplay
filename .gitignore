@@ -7,3 +7,4 @@ dist/
 *.zip
 *.log
 install/prereq/PawnIO_setup.exe
+prototype/rust-slint/target/
