@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicIsize, Ordering};
+﻿use std::sync::atomic::{AtomicIsize, Ordering};
 use windows_sys::Win32::Foundation::{
     CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, WAIT_OBJECT_0,
 };
@@ -65,6 +65,7 @@ pub fn listen(ui: slint::Weak<crate::AppWindow>) {
             let _ = slint::invoke_from_event_loop(move || {
                 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
                 use slint::ComponentHandle;
+                use windows_sys::Win32::Graphics::Gdi::{InvalidateRect, UpdateWindow};
                 use windows_sys::Win32::UI::WindowsAndMessaging::{
                     SetForegroundWindow, ShowWindow, SW_SHOW,
                 };
@@ -76,7 +77,11 @@ pub fn listen(ui: slint::Weak<crate::AppWindow>) {
                             unsafe {
                                 ShowWindow(hwnd, SW_SHOW);
                                 SetForegroundWindow(hwnd);
+                                InvalidateRect(hwnd, std::ptr::null(), 1);
+                                UpdateWindow(hwnd);
                             }
+                            let _ = ui.show();
+                            ui.window().request_redraw();
                         }
                     }
                 }
@@ -84,3 +89,4 @@ pub fn listen(ui: slint::Weak<crate::AppWindow>) {
         }
     });
 }
+
