@@ -28,6 +28,7 @@ public sealed class DisplayEngine : IDisposable
     private string? _lastError;
     private long _frames;
     private double _lastFrameMs;
+    private DateTime _lastKeyframeUtc = DateTime.MinValue;
     private readonly DateTime _startedAt = DateTime.Now;
     private readonly ManualResetEventSlim _wake = new(false);
 
@@ -93,17 +94,30 @@ public sealed class DisplayEngine : IDisposable
                     var bgra = _renderer.RenderBgra(snap, cfg);
                     Logger.Info($"frame {snap.Timestamp:HH:mm:ss.fff} cpu={snap.CpuTemp:F0} load={snap.CpuLoad:F0}");
 
-                    bool ok;
-                    string message;
-                    double ms;
-                    if (_needKeyframe || _lastBgra == null)
+                    bool ok = false;
+                    string message = "";
+                    double ms = 0;
+                    var keyframeAllowed = (DateTime.UtcNow - _lastKeyframeUtc).TotalSeconds >= 5;
+                    // C8 is only reliable on a fresh connection. Never resend a
+                    // full keyframe mid-stream; reconnect instead.
+                    if (_lastBgra == null)
                     {
-                        ok = _device.ShowRawImage(bgra, out message, out ms);
-                        if (ok)
+                        if (keyframeAllowed)
                         {
-                            _lastBgra = bgra;
-                            _seq = 0;
-                            _needKeyframe = false;
+                            ok = _device.ShowRawImage(bgra, out message, out ms);
+                            if (ok)
+                            {
+                                _lastBgra = bgra;
+                                _seq = 0;
+                                _needKeyframe = false;
+                                _lastKeyframeUtc = DateTime.UtcNow;
+                            }
+                            else
+                            {
+                                _device.Close();
+                                _needKeyframe = true;
+                                lastConnectAttempt = DateTime.MinValue;
+                            }
                         }
                     }
                     else
@@ -116,8 +130,11 @@ public sealed class DisplayEngine : IDisposable
                         }
                         else if (needResend)
                         {
-                            // Official recovery: reload the full keyframe, then seq resets to 0.
+                            // Reconnect so the next frame is a fresh C8 keyframe.
+                            _device.Close();
+                            _lastBgra = null;
                             _needKeyframe = true;
+                            lastConnectAttempt = DateTime.MinValue;
                         }
                     }
 
@@ -180,6 +197,7 @@ public sealed class DisplayEngine : IDisposable
             _lastError = null;
             _needKeyframe = true;
             _lastBgra = null;
+            _lastKeyframeUtc = DateTime.MinValue;
             _seq = 0;
             Logger.Info($"Connected on {_device.PortName}, firmware {_device.Version}");
         }
@@ -195,7 +213,9 @@ public sealed class DisplayEngine : IDisposable
     {
         lock (_gate) { _settings.AutoStartDisplay = true; _settings.Save(_settingsPath); }
         _needKeyframe = true;
+        _lastBgra = null;
         _displaying = true;
+        try { _device.Close(); } catch { }
         _wake.Set();
     }
 
@@ -280,6 +300,9 @@ public sealed class DisplayEngine : IDisposable
                     var value = Math.Clamp(request.Value ?? 0, 0, 3);
                     lock (_gate) { _settings.Rotate = value; _settings.Save(_settingsPath); }
                     try { if (_device.IsOpen) _device.SetRotate((byte)value); } catch { }
+                    _needKeyframe = true;
+                    _lastBgra = null;
+                    try { _device.Close(); } catch { }
                     _wake.Set();
                     return new IpcResponse { Ok = true, Status = GetStatus() };
                 }

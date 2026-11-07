@@ -3924,7 +3924,6 @@ name = "sama-display-slint"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
- "chrono",
  "raw-window-handle",
  "serde",
  "serde_json",

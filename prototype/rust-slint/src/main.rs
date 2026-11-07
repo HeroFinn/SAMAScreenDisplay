@@ -60,15 +60,6 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
-    // Local clock.
-    let weak = ui.as_weak();
-    let timer = slint::Timer::default();
-    timer.start(slint::TimerMode::Repeated, Duration::from_secs(1), move || {
-        if let Some(ui) = weak.upgrade() {
-            ui.set_clock(chrono::Local::now().format("%H:%M:%S").to_string().into());
-        }
-    });
-
     // Bring the backend up automatically; a service installed by our installer
     // grants normal users start/stop/query rights, so this does not need UAC.
     ui.set_starting(true);
@@ -87,12 +78,17 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     // Poll the C# service: status + a freshly rendered dashboard preview.
+    let mut settings_synced = false;
     let weak = ui.as_weak();
     std::thread::spawn(move || loop {
         let result = match ipc::preview() {
             Ok(value) => Ok(value),
             Err(_) => ipc::status().map(|status| (status, String::new())),
         };
+        let first_sync = !settings_synced && result.is_ok();
+        if first_sync {
+            settings_synced = true;
+        }
         let weak = weak.clone();
         let _ = slint::invoke_from_event_loop(move || {
             if let Some(ui) = weak.upgrade() {
@@ -107,13 +103,15 @@ fn main() -> Result<(), slint::PlatformError> {
                         ui.set_frame_ms(format!("{:.0}", st.last_frame_ms).into());
                         ui.set_service_mode(st.service_mode);
                         ui.set_interval(format!("{} s", st.interval_seconds).into());
-                        ui.set_interval_value(st.interval_seconds as f32);
-                        ui.set_brightness(st.brightness as f32);
-                        ui.set_theme(match st.theme.to_ascii_lowercase().as_str() {
-                            "neon" => 1,
-                            "minimal" | "light" => 2,
-                            _ => 0,
-                        });
+                        if first_sync {
+                            ui.set_interval_value(st.interval_seconds as f32);
+                            ui.set_brightness(st.brightness as f32);
+                            ui.set_theme(match st.theme.to_ascii_lowercase().as_str() {
+                                "neon" => 1,
+                                "minimal" | "light" => 2,
+                                _ => 0,
+                            });
+                        }
                         ui.set_cpu_temp(temp(st.sensors.cpu_temp).into());
                         ui.set_cpu_load(load(st.sensors.cpu_load).into());
                         ui.set_cpu_clock(clock_mhz(st.sensors.cpu_clock_mhz).into());
@@ -172,7 +170,6 @@ fn main() -> Result<(), slint::PlatformError> {
             let _ = ipc::command(&format!(r#"{{"Cmd":"brightness","Value":{brightness}}}"#));
             let _ = ipc::command(&format!(r#"{{"Cmd":"interval","Value":{interval}}}"#));
             let _ = ipc::command(&format!(r#"{{"Cmd":"rotate","Value":{rotate}}}"#));
-            let _ = ipc::command(r#"{"Cmd":"start"}"#);
         });
     });
 
@@ -227,7 +224,6 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     });
 
-    ui.set_clock(chrono::Local::now().format("%H:%M:%S").to_string().into());
     if let Ok(page) = std::env::var("PAGE") {
         ui.set_page(page.parse::<i32>().unwrap_or(0));
     }
